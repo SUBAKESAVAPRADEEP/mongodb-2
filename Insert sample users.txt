@@ -1,0 +1,207 @@
+// Insert sample users
+db.users.insertMany([
+  {
+    user_id: 1,
+    name: "John Doe",
+    email: "john.doe@example.com",
+    phone: "123-456-7890",
+    role: "student",
+    join_date: ISODate("2020-09-01")
+  },
+  {
+    user_id: 2,
+    name: "Jane Smith",
+    email: "jane.smith@example.com",
+    phone: "987-654-3210",
+    role: "mentor",
+    join_date: ISODate("2020-08-15"
+// Insert sample codekata data
+db.codekata.insertMany([
+  {
+    kata_id: 1,
+    user_id: 1,
+    date: ISODate("2020-10-10"),
+    problems_solved: 5
+  },
+  {
+    kata_id: 2,
+    user_id: 1,
+    date: ISODate("2020-11-15"),
+    problems_solved: 8
+  }
+])
+
+// Insert sample attendance data
+db.attendance.insertMany([
+  {
+    attendance_id: 1,
+    user_id: 1,
+    date: ISODate("2020-10-01"),
+    present: true
+  },
+  {
+    attendance_id: 2,
+    user_id: 1,
+    date: ISODate("2020-10-15"),
+    present: false
+  }
+])
+
+// Insert sample topics
+db.topics.insertMany([
+  {
+    topic_id: 1,
+    topic_name: "MongoDB"
+  },
+  {
+    topic_id: 2,
+    topic_name: "Node.js"
+  }
+])
+
+// Insert sample tasks
+db.tasks.insertMany([
+  {
+    task_id: 1,
+    user_id: 1,
+    task_name: "Task 1",
+    date: ISODate("2020-10-10"),
+    status: "completed"
+  },
+  {
+    task_id: 2,
+    user_id: 1,
+    task_name: "Task 2",
+    date: ISODate("2020-11-15"),
+    status: "in progress"
+  }
+])
+
+// Insert sample company drivers
+db.company_drivers.insertMany([
+  {
+    driver_id: 1,
+    name: "Driver 1",
+    date: ISODate("2020-10-20")
+  },
+  {
+    driver_id: 2,
+    name: "Driver 2",
+    date: ISODate("2020-11-01")
+  }
+])
+
+// Insert sample mentors
+db.mentors.insertMany([
+  {
+    mentor_id: 1,
+    name: "Mentor 1",
+    mentees_count: 10
+  },
+  {
+    mentor_id: 2,
+    name: "Mentor 2",
+    mentees_count: 20
+  }
+])
+db.topics.aggregate([
+  {
+    $lookup: {
+      from: "tasks",
+      localField: "topic_id",
+      foreignField: "topic_id",
+      as: "tasks"
+    }
+  },
+  {
+    $match: {
+      "tasks.date": {
+        $gte: ISODate("2020-10-01"),
+        $lt: ISODate("2020-11-01")
+      }
+    }
+  }
+])
+
+db.company_drivers.find({
+  date: {
+    $gte: ISODate("2020-10-15"),
+    $lte: ISODate("2020-10-31")
+  }
+})
+
+db.users.aggregate([
+  {
+    $lookup: {
+      from: "company_drivers",
+      localField: "user_id",
+      foreignField: "driver_id",
+      as: "company_drivers"
+    }
+  },
+  {
+    $match: {
+      $or: [
+        { "role": "student" },
+        { "company_drivers": { $ne: [] } }
+      ]
+    }
+  }
+])
+
+db.codekata.aggregate([
+  {
+    $match: {
+      user_id: 1
+    }
+  },
+  {
+    $group: {
+      _id: "$user_id",
+      total_problems_solved: {
+        $sum: "$problems_solved"
+      }
+    }
+  }
+])
+
+
+db.mentors.find({
+  mentees_count: {
+    $gt: 15
+  }
+})
+db.attendance.aggregate([
+  {
+    $match: {
+      date: {
+        $gte: ISODate("2020-10-15"),
+        $lte: ISODate("2020-10-31")
+      },
+      present: false
+    }
+  },
+  {
+    $lookup: {
+      from: "tasks",
+      localField: "user_id",
+      foreignField: "user_id",
+      as: "tasks"
+    }
+ },
+  {
+    $match: {
+      "tasks.status": {
+        $ne: "submitted"
+      }
+    }
+  },
+  {
+    $group: {
+      _id: null,
+      count: {
+        $sum: 1
+      }
+    }
+  }
+])
